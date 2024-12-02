@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>USA Network Heatmap</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://d3js.org/topojson.v3.min.js"></script>
+    <style>
+        #map {
+            width: 960px;
+            height: 600px;
+            margin: 0 auto;
+        }
+        .state {
+            stroke: #fff;
+            stroke-width: 1px;
+        }
+        .tooltip {
+            position: absolute;
+            background-color: white;
+            padding: 5px;
+            border: 1px solid #ddd;
+            pointer-events: none;
+        }
+        .control-panel {
+            width: 960px;
+            margin: 20px auto;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+        .metric-btn {
+            padding: 8px 16px;
+            margin: 0 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            background: #ddd;
+        }
+        .metric-btn.active {
+            background: #4CAF50;
+            color: white;
+        }
+        .legend-title {
+            font-size: 12px;
+            font-weight: bold;
+            fill: #333;
+        }
+        .legend-label {
+            font-size: 10px;
+            fill: #666;
+        }
+        .legend rect {
+            stroke: #ccc;
+            stroke-width: 0.5px;
+        }
+        .header {
+            text-align: center;
+            width: 960px;
+            margin: 20px auto;
+        }
+        .header h1 {
+            margin-bottom: 10px;
+        }
+        .header p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        /* Styles for future live data functionality */
+        /*
+        #last-updated {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .loading {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .error-message {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #f8d7da;
+            padding: 10px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        */
+        .metric-details {
+            position: absolute;
+            background-color: white;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            pointer-events: none;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .metric-details div {
+            margin: 2px 0;
+        }
+
+        .show-all {
+            margin-left: 20px !important;
+            background: #2196F3 !important;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>USA Network Heatmap</h1>
+        <p>Interactive visualization of network performance metrics across the United States, showing overall score, latency, bandwidth, and reliability measurements by state.</p>
+        <!-- Add this when implementing live updates -->
+        <!--
+        <div id="last-updated">Last updated: <span id="update-time"></span></div>
+        -->
+    </div>
+    <div class="control-panel">
+        <button class="metric-btn active" data-metric="value">Overall Score</button>
+        <button class="metric-btn" data-metric="latency">Latency</button>
+        <button class="metric-btn" data-metric="bandwidth">Bandwidth</button>
+        <button class="metric-btn" data-metric="reliability">Reliability</button>
+        <button class="metric-btn show-all" data-metric="all">Show All Metrics</button>
+    </div>
+    <div id="map"></div>
+    <script src="heatmap.js"></script>
+</body>
+</html> 
