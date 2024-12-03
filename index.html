@@ -4,145 +4,189 @@
     <title>USA Network Heatmap</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://d3js.org/topojson.v3.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             margin: 0;
             padding: 20px;
-            font-family: 'Roboto', sans-serif;
-            background-color: #f8f9fa;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
             color: #333;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg"><rect width="20" height="20" fill="none" stroke="%23e0e5ec" stroke-width="0.5"/></svg>');
+            opacity: 0.5;
+            z-index: -1;
+            pointer-events: none;
         }
 
         .header {
             text-align: center;
             width: 960px;
             margin: 0 auto 30px auto;
-            padding: 20px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
         }
 
         .header h1 {
             margin: 0 0 15px 0;
-            color: #2c3e50;
-            font-weight: 500;
+            color: #1a365d;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 2.2em;
+            letter-spacing: -0.5px;
+            background: linear-gradient(120deg, #1a365d, #2c5282);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .header p {
-            color: #666;
+            color: #4a5568;
             margin: 0;
-            line-height: 1.6;
+            line-height: 1.7;
             font-size: 1.1em;
+            font-weight: 300;
         }
 
         .control-panel {
             width: 960px;
             margin: 0 auto 20px auto;
             padding: 15px 20px;
-            background: white;
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             display: flex;
             align-items: center;
             gap: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
         }
 
         .metric-btn {
-            padding: 10px 20px;
+            padding: 12px 24px;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
             font-size: 14px;
             font-weight: 500;
-            transition: all 0.2s ease;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
             background: #f1f3f5;
             color: #495057;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
         .metric-btn:hover {
             background: #e9ecef;
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
         .metric-btn.active {
-            background: #4CAF50;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
             color: white;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
         }
 
         .show-all {
             margin-left: auto !important;
-            background: #2196F3 !important;
-            color: white;
+            background: linear-gradient(135deg, #2196F3, #1976D2) !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3) !important;
         }
 
         .show-all:hover {
-            background: #1976D2 !important;
+            background: linear-gradient(135deg, #1976D2, #1565C0) !important;
         }
 
         #map {
             margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            padding: 20px;
         }
 
         .state {
             stroke: #fff;
             stroke-width: 1px;
-            transition: opacity 0.2s ease;
+            transition: all 0.3s ease;
         }
 
         .state:hover {
             opacity: 0.8;
+            stroke-width: 2px;
         }
 
         .tooltip {
             position: absolute;
-            background-color: white;
-            padding: 12px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.98);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             pointer-events: none;
             font-size: 14px;
-            line-height: 1.4;
+            line-height: 1.5;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            font-weight: 300;
         }
 
         #status-display {
             width: 300px;
-            padding: 20px;
-            background-color: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            font-family: 'Roboto', monospace;
-            line-height: 1.5;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            font-family: 'Poppins', sans-serif;
+            line-height: 1.6;
             align-self: flex-start;
             position: sticky;
             top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
         }
 
         .issue-entry {
-            padding: 12px;
-            margin: 8px 0;
-            border-radius: 8px;
-            background-color: #f8f9fa;
-            transition: all 0.2s ease;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+            border-left: 4px solid;
         }
 
         .issue-entry:hover {
-            transform: translateX(2px);
+            transform: translateX(4px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
 
         .legend-title {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 500;
-            fill: #495057;
+            fill: #1a365d;
+            font-family: 'Montserrat', sans-serif;
         }
 
         .legend-label {
-            font-size: 11px;
-            fill: #868e96;
+            font-size: 12px;
+            fill: #4a5568;
+            font-family: 'Poppins', sans-serif;
         }
 
         .legend rect {
