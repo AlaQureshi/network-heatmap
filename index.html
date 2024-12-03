@@ -4,125 +4,178 @@
     <title>USA Network Heatmap</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://d3js.org/topojson.v3.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        #map {
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Roboto', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
             width: 960px;
-            height: 600px;
-            margin: 0 auto;
+            margin: 0 auto 30px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-        .state {
-            stroke: #fff;
-            stroke-width: 1px;
+
+        .header h1 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-weight: 500;
         }
-        .tooltip {
-            position: absolute;
-            background-color: white;
-            padding: 5px;
-            border: 1px solid #ddd;
-            pointer-events: none;
+
+        .header p {
+            color: #666;
+            margin: 0;
+            line-height: 1.6;
+            font-size: 1.1em;
         }
+
         .control-panel {
             width: 960px;
-            margin: 20px auto;
-            padding: 10px;
-            background: #f5f5f5;
-            border-radius: 5px;
+            margin: 0 auto 20px auto;
+            padding: 15px 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
+
         .metric-btn {
-            padding: 8px 16px;
-            margin: 0 5px;
-            cursor: pointer;
+            padding: 10px 20px;
             border: none;
-            border-radius: 4px;
-            background: #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            background: #f1f3f5;
+            color: #495057;
         }
+
+        .metric-btn:hover {
+            background: #e9ecef;
+            transform: translateY(-1px);
+        }
+
         .metric-btn.active {
             background: #4CAF50;
             color: white;
         }
-        .legend-title {
-            font-size: 12px;
-            font-weight: bold;
-            fill: #333;
+
+        .show-all {
+            margin-left: auto !important;
+            background: #2196F3 !important;
+            color: white;
         }
-        .legend-label {
-            font-size: 10px;
-            fill: #666;
+
+        .show-all:hover {
+            background: #1976D2 !important;
         }
-        .legend rect {
-            stroke: #ccc;
-            stroke-width: 0.5px;
+
+        #map {
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-        .header {
-            text-align: center;
-            width: 960px;
-            margin: 20px auto;
+
+        .state {
+            stroke: #fff;
+            stroke-width: 1px;
+            transition: opacity 0.2s ease;
         }
-        .header h1 {
-            margin-bottom: 10px;
+
+        .state:hover {
+            opacity: 0.8;
         }
-        .header p {
-            color: #666;
-            margin-bottom: 20px;
-        }
-        /* Styles for future live data functionality */
-        /*
-        #last-updated {
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
-        }
-        
-        .loading {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: #fff3cd;
-            padding: 10px;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .error-message {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: #f8d7da;
-            padding: 10px;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        */
-        .metric-details {
+
+        .tooltip {
             position: absolute;
             background-color: white;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             pointer-events: none;
-            font-size: 12px;
+            font-size: 14px;
             line-height: 1.4;
         }
 
-        .metric-details div {
-            margin: 2px 0;
+        #status-display {
+            width: 300px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            font-family: 'Roboto', monospace;
+            line-height: 1.5;
+            align-self: flex-start;
+            position: sticky;
+            top: 20px;
         }
 
-        .show-all {
-            margin-left: 20px !important;
-            background: #2196F3 !important;
-            color: white;
+        .issue-entry {
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            transition: all 0.2s ease;
+        }
+
+        .issue-entry:hover {
+            transform: translateX(2px);
+        }
+
+        .legend-title {
+            font-size: 12px;
+            font-weight: 500;
+            fill: #495057;
+        }
+
+        .legend-label {
+            font-size: 11px;
+            fill: #868e96;
+        }
+
+        .legend rect {
+            stroke: #dee2e6;
+            stroke-width: 0.5px;
+        }
+
+        .visualization-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            width: fit-content;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 1400px) {
+            .visualization-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            #status-display {
+                position: static;
+                width: 920px;
+                margin-top: 20px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>USA Network Heatmap</h1>
+        <h1>USA Network Performance Monitor</h1>
         <p>Interactive visualization of network performance metrics across the United States, showing overall score, latency, bandwidth, and reliability measurements by state.</p>
-        <!-- Add this when implementing live updates -->
-        <!--
-        <div id="last-updated">Last updated: <span id="update-time"></span></div>
-        -->
     </div>
     <div class="control-panel">
         <button class="metric-btn active" data-metric="value">Overall Score</button>
@@ -131,7 +184,10 @@
         <button class="metric-btn" data-metric="reliability">Reliability</button>
         <button class="metric-btn show-all" data-metric="all">Show All Metrics</button>
     </div>
-    <div id="map"></div>
+    <div class="visualization-container">
+        <div id="map"></div>
+        <div id="status-display"></div>
+    </div>
     <script src="heatmap.js"></script>
 </body>
 </html> 

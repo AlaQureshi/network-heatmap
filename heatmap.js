@@ -1,5 +1,6 @@
 const width = 960;
 const height = 600;
+const REFRESH_INTERVAL = 5000; // Update every 5 seconds
 
 // Add these variables at the top
 let currentMetric = 'value';
@@ -145,6 +146,28 @@ Promise.all([
 
     // Add legend
     addLegend();
+
+    // Add simulation controls
+    const controlPanel = d3.select('.control-panel');
+    
+    controlPanel.append('button')
+        .attr('class', 'metric-btn')
+        .text('Pause Simulation')
+        .on('click', function() {
+            if (this.textContent === 'Pause Simulation') {
+                clearInterval(updateTimer);
+                this.textContent = 'Resume Simulation';
+            } else {
+                updateTimer = setInterval(updateLiveData, REFRESH_INTERVAL);
+                this.textContent = 'Pause Simulation';
+            }
+        });
+
+    // Start the simulation
+    let updateTimer = setInterval(updateLiveData, REFRESH_INTERVAL);
+    
+    // Initial update
+    updateLiveData();
 });
 
 // Replace the generateMockData function with this more realistic one
@@ -209,7 +232,7 @@ function getNetworkData() {
 function addLegend() {
     const legendWidth = 200;
     const legendHeight = 20;
-    const legendMargin = { top: 20, right: 20 };
+    const legendMargin = { top: 20, right: 50 };
     
     const legend = svg.append("g")
         .attr("class", "legend")
@@ -418,3 +441,214 @@ IMPLEMENTATION NOTES:
 
 ===============================================================================
 */
+
+// Add these near the top of your file, after the initial constants
+class NetworkSimulator {
+    constructor() {
+        this.timeOfDay = new Date().getHours(); // Start with current hour
+        this.patterns = {
+            workHours: {
+                latencyMultiplier: 1.5,    // Higher latency during work hours
+                bandwidthMultiplier: 0.8,  // Lower bandwidth during work hours
+                reliabilityMultiplier: 0.9 // Slightly lower reliability
+            },
+            nightTime: {
+                latencyMultiplier: 0.7,    // Better latency at night
+                bandwidthMultiplier: 1.2,  // Better bandwidth at night
+                reliabilityMultiplier: 1.1 // Better reliability
+            },
+            random: {
+                chance: 0.05,  // 5% chance of random event
+                impact: 0.3    // 30% degradation during events
+            }
+        };
+
+        // Enhanced issue tracking
+        this.issueTypes = {
+            CONGESTION: {
+                name: 'Network Congestion',
+                affects: ['latency', 'bandwidth'],
+                severity: 0.3
+            },
+            HARDWARE: {
+                name: 'Hardware Malfunction',
+                affects: ['reliability', 'latency'],
+                severity: 0.4
+            },
+            MAINTENANCE: {
+                name: 'Scheduled Maintenance',
+                affects: ['bandwidth'],
+                severity: 0.2
+            },
+            OUTAGE: {
+                name: 'Partial Outage',
+                affects: ['reliability'],
+                severity: 0.5
+            }
+        };
+
+        // Track active issues with their types
+        this.activeEvents = new Map(); // state -> {type, startTime}
+    }
+
+    isWorkHours() {
+        return this.timeOfDay >= 9 && this.timeOfDay <= 17;
+    }
+
+    updateTimeOfDay() {
+        this.timeOfDay = (this.timeOfDay + 1) % 24;
+        
+        // Clear some random events with more detailed logging
+        for (const [state, issue] of this.activeEvents.entries()) {
+            // 30% chance to resolve each event
+            if (Math.random() < 0.3) {
+                this.activeEvents.delete(state);
+            }
+        }
+    }
+
+    generateIssueType() {
+        const types = Object.keys(this.issueTypes);
+        return types[Math.floor(Math.random() * types.length)];
+    }
+
+    generateMetrics(state, baseMetrics) {
+        const pattern = this.isWorkHours() ? 
+            this.patterns.workHours : 
+            this.patterns.nightTime;
+
+        // Check for new random network events
+        if (Math.random() < this.patterns.random.chance && !this.activeEvents.has(state)) {
+            const issueType = this.generateIssueType();
+            this.activeEvents.set(state, {
+                type: issueType,
+                startTime: this.timeOfDay
+            });
+        }
+
+        const activeIssue = this.activeEvents.get(state);
+        const hasIssue = !!activeIssue;
+
+        // Calculate metrics considering specific issue types
+        let metrics = {
+            latency: this.adjustMetric(baseMetrics.latency, pattern.latencyMultiplier, hasIssue, 1.2),
+            bandwidth: this.adjustMetric(baseMetrics.bandwidth, pattern.bandwidthMultiplier, hasIssue, 1),
+            reliability: this.adjustMetric(baseMetrics.reliability, pattern.reliabilityMultiplier, hasIssue, 0.5)
+        };
+
+        // Apply specific issue impacts
+        if (hasIssue) {
+            const issueConfig = this.issueTypes[activeIssue.type];
+            issueConfig.affects.forEach(metric => {
+                metrics[metric] *= (1 - issueConfig.severity);
+            });
+        }
+
+        // Calculate overall score
+        const latencyScore = Math.max(0, 100 - metrics.latency);
+        metrics.value = this.calculateOverallScore(latencyScore, metrics.bandwidth, metrics.reliability);
+
+        return metrics;
+    }
+
+    getActiveIssuesDescription() {
+        if (this.activeEvents.size === 0) {
+            return 'No Active Issues';
+        }
+
+        return Array.from(this.activeEvents.entries())
+            .map(([state, issue]) => {
+                const issueConfig = this.issueTypes[issue.type];
+                return `${state}: ${issueConfig.name} (${issueConfig.affects.join(', ')})`;
+            })
+            .join('\n');
+    }
+
+    // Add this new method to calculate overall score
+    calculateOverallScore(latencyScore, bandwidth, reliability) {
+        // Weights for each metric (adjust these as needed)
+        const weights = {
+            latency: 0.3,    // 30% weight for latency
+            bandwidth: 0.4,   // 40% weight for bandwidth
+            reliability: 0.3  // 30% weight for reliability
+        };
+
+        // Calculate weighted average
+        const score = (
+            (latencyScore * weights.latency) +
+            (bandwidth * weights.bandwidth) +
+            (reliability * weights.reliability)
+        );
+
+        // Round to nearest integer
+        return Math.round(score);
+    }
+
+    adjustMetric(baseValue, multiplier, hasIssue, variationScale = 1) {
+        let value = baseValue * multiplier;
+        
+        // Add some random variation
+        const variation = (Math.random() - 0.5) * 3 * variationScale;
+        value += variation;
+        
+        // Apply random issues if they occur
+        if (hasIssue) {
+            value *= (1 - this.patterns.random.impact);
+        }
+        
+        // Ensure values stay within reasonable bounds
+        return Math.min(100, Math.max(0, value));
+    }
+}
+
+// Initialize simulator
+const simulator = new NetworkSimulator();
+
+function updateLiveData() {
+    simulator.updateTimeOfDay();
+    
+    Object.keys(currentData).forEach(state => {
+        currentData[state] = simulator.generateMetrics(state, currentData[state]);
+    });
+    
+    updateMap();
+    
+    const timeStr = `${simulator.timeOfDay.toString().padStart(2, '0')}:00`;
+    const period = simulator.isWorkHours() ? "Work Hours" : "Night Time";
+    const events = simulator.getActiveIssuesDescription();
+    
+    updateStatusDisplay(timeStr, period, events);
+}
+
+// Add this new function to create/update the status display
+function updateStatusDisplay(time, period, events) {
+    let statusDiv = d3.select('#status-display');
+    
+    // Create status display if it doesn't exist
+    if (statusDiv.empty()) {
+        statusDiv = d3.select('.visualization-container')
+            .append('div')
+            .attr('id', 'status-display');
+    }
+    
+    // Update status content with formatted issues
+    const issuesHtml = events.split('\n').map(issue => 
+        `<div class="issue-entry" style="color: ${issue.includes('No Active') ? 'green' : 'red'};
+                     border-left: 4px solid ${issue.includes('No Active') ? '#4CAF50' : '#ff4444'};">
+            ${issue}
+        </div>`
+    ).join('');
+
+    statusDiv.html(`
+        <div style="font-weight: bold; font-size: 1.1em;">Network Status Monitor</div>
+        <div style="margin: 15px 0;">
+            <div><strong>Time:</strong> ${time}</div>
+            <div><strong>Period:</strong> ${period}</div>
+        </div>
+        <div style="font-weight: bold; margin-top: 15px;">Active Issues:</div>
+        ${issuesHtml}
+        <div style="margin-top: 15px; font-size: 0.9em; color: #666;">
+            Last Updated: ${new Date().toLocaleTimeString()}
+        </div>
+    `);
+}
