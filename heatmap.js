@@ -9,7 +9,7 @@ let currentData = null;
 // Modify the color scales for different metrics
 const colorScales = {
     value: d3.scaleLinear()
-        .domain([70, 85, 100])
+        .domain([60, 75, 90])
         .range(["#ff4444", "#ffeb3b", "#4CAF50"]),  // Red -> Yellow -> Green
     latency: d3.scaleLinear()
         .domain([15, 50, 85])
@@ -18,7 +18,7 @@ const colorScales = {
         .domain([70, 85, 100])
         .range(["#ff4444", "#ffeb3b", "#4CAF50"]),  // Red -> Yellow -> Green
     reliability: d3.scaleLinear()
-        .domain([90, 95, 100])
+        .domain([80, 85, 90])
         .range(["#ff4444", "#ffeb3b", "#4CAF50"])   // Red -> Yellow -> Green
 };
 
@@ -225,7 +225,7 @@ function getTooltipContent(d, stateData) {
             <strong>${d.properties.name}</strong><br/>
             Overall Score: ${stateData.value.toFixed(2)}<br/>
             Latency: ${stateData.latency.toFixed(2)}ms<br/>
-            Bandwidth: ${stateData.bandwidth.toFixed(2)}<br/>
+            Bandwidth: ${stateData.bandwidth.toFixed(2)} Mbps<br/>
             Reliability: ${stateData.reliability.toFixed(2)}%
         `;
     }
@@ -235,6 +235,7 @@ function getTooltipContent(d, stateData) {
         ${currentMetric.charAt(0).toUpperCase() + currentMetric.slice(1)}: 
         ${currentMetric === 'latency' ? stateData[currentMetric].toFixed(2) + 'ms' : 
           currentMetric === 'reliability' ? stateData[currentMetric].toFixed(2) + '%' : 
+          currentMetric === 'bandwidth' ? stateData[currentMetric].toFixed(2) + ' Mbps' : 
           stateData[currentMetric].toFixed(2)}
     `;
 }
@@ -499,6 +500,7 @@ function updateLegend(metric) {
     // If showing all metrics, use the overall score scale
     const effectiveMetric = metric === 'all' ? 'value' : metric;
     
+    // Reverse gradient colors for latency only
     if (effectiveMetric === 'latency') {
         gradient.append("stop").attr("offset", "0%").attr("stop-color", "#4CAF50");
         gradient.append("stop").attr("offset", "50%").attr("stop-color", "#ffeb3b");
@@ -516,9 +518,11 @@ function updateLegend(metric) {
     const scale = colorScales[effectiveMetric];
     const domain = scale.domain();
     const labels = effectiveMetric === 'latency' ? 
-        [`${domain[2]}ms`, `${domain[1]}ms`, `${domain[0]}ms`] :
+        [`${domain[0]}ms`, `${domain[1]}ms`, `${domain[2]}ms`] :
         effectiveMetric === 'reliability' ? 
             [`${domain[0]}%`, `${domain[1]}%`, `${domain[2]}%`] :
+        effectiveMetric === 'bandwidth' ? 
+            [`${domain[0]} Mbps`, `${domain[1]} Mbps`, `${domain[2]} Mbps`] : 
             domain;
 
     d3.selectAll(".legend-label")
